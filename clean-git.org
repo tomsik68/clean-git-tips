@@ -1,0 +1,268 @@
+* Clean git history
+
+  This document presents some tips to use git to produce a "clean"
+  history tree. There are certainly many ways to achieve this, so
+  let's try to define what a clean history tree is. This document is
+  written for people who are familiar with git commands, but still are
+  not capable of producing a clean history tree while using git for
+  version tracking.
+
+  This document presents some of the common issues beginners might
+  face and proposes solutions. All the proposed solutions aim to work
+  with local repository only. The aim of this document is to provide
+  tips on preparing a well structured local git history that may be pushed
+  to a remote team repository.
+
+** What does history consist of?
+
+   In the world of git, history is a tree of changes of the codebase, where each
+   change has information about:
+   - what was changed
+   - who is responsible for the change
+   - when it was performed
+   - what the changes are based on (previous commit)
+   - and, in case the team writes informative commit messages, why it changed
+
+   Git assists programmers with including these informations in the history tree.
+   However, it is still not rare for beginners to produce a history tree that is
+   a lot more complicated than it should be.
+
+** What is not a clean history tree?
+   Let's examine the following tree:
+   https://twitter.com/dada78641/status/694303851470548992
+
+   This is an example of a non-clean history tree. If you ever used
+   git, you may have a gut feeling that there's something wrong with
+   such a history tree. Developers would agree that such a history
+   record is not too useful, because it is hard to tell what the
+   changes are based on. When inspecting git tree, it seems to be
+   rather unclear what the developer(s) might be trying to achieve
+   here. It seems that multiple developers were working on the project
+   at once and merging is done in unreasonable ways.
+
+   Don't worry, we won't be discussing how to "fix" that. Rather, we
+   will discuss:
+   1. How not to produce a similar tree
+   2. How to connect your history tree to the one in remote repository
+
+** What is a clean history tree?
+   In our case, clean history means it is easy to get back the
+   above-mentioned information. Unless you have a good reason, I
+   strongly suggest using linear history.
+
+   These are the main reasons why this document advocates for linear
+   history:
+
+   - It is much easier to browse it later
+   - It clearly defines the structure of commits that developers may push to the remote repository
+   - There are no merge commits which are (arguably) meaningless
+   - It is proven by time on large projects with huge distributed teams (such as the Linux kernel)
+
+** Organizing your workflow
+
+   For beginner, it might seem there are too many things to keep track
+   of when using git. One of possible causes of this feeling is that
+   many beginners tend to work in messy ways on multiple things at once.
+
+   First of, you need to realize that history tree reflects whether or
+   not your workflow is organized. If your history tree looks
+   terrible, it might be an indication that you work on too many
+   things at once in your workflow. This is a problem. 
+
+   You should start organizing your workflow by only working on one
+   thing at a time. If you are implementing a feature, focus on just
+   that feature. Do not drift away to something else or you shot
+   yourself in the foot. If you discover a bug during that, file a bug
+   report. Later when you're more comfortable with git, you can try
+   doing more things at once. For now, please stick to only one.
+
+** Switching context for quick fixes
+
+   While I said you should only focus on one thing at once, it is not
+   wrong to sometimes shift the focus from implementing a feature to
+   fixing a crucial bug you just discovered. This section discusses
+   how to do that.
+
+   When you discover a bug in other part of codebase while working on a feature,
+   you could simply blindly commit the bugfix into your feature branch and
+   continue working. In fact, that's what some people do. However, this is
+   something you really shouldn't do. Imagine creating a pull request with a
+   feature and a bugfix. Your feature gets rejected, but they want to have the
+   bugfix. Or the opposite. I'm trying to stress that these are 2 separate
+   things and shouldn't be part of the same set of changes. You should make
+   another branch for that.
+
+   I suggest doing the following: 
+   1. =git stash -p= to save uncommited changes for your feature,
+   2. checkout the master branch and create a new bugfix branch
+   3. commit the bugfix on that branch
+   4. checkout your feature branch and =git stash pop=
+
+   Now, you have the bugfix in a separate branch and your feature branch is left
+   intact. You can create a pull request with the bugfix and later update your
+   feature branch to contain it. You can now continue working on your feature
+   without disruption and with a good feeling that you found and/or fixed a bug
+   today.
+
+** Keeping up to date with the upstream
+
+   Let's consider an initial situation where you fork a repository and start
+   working in your branch =feature=, which is based on master.
+
+   #+BEGIN_SRC git
+      master <- A <- B <- feature
+   #+END_SRC
+
+   You continue working on your changes while someone else makes changes to the master branch:
+   #+BEGIN_SRC git
+      old_master <- A <- B <- C <- feature
+              \- D <- E <- master
+   #+END_SRC
+
+   You can see your =feature= branch has "diverged" from the =master=. As your
+   feature is not yet finished and the changes introduced in commits D and E
+   don't have any conflict with your changes, you'd like to keep working on your
+   feature, but still want to build on top of the latest version of other parts
+   of your project.
+
+   You basically have 2 options in this case: Merge =master= into
+   =feature=, Rebase =feature= on top of =master=. I strongly suggest
+   using rebase to modify your local history and using merge to modify
+   remote history. It is up to everyone's personal preference, but
+   some teams don't like having merge commits in their history tree,
+   so keep that in mind.
+
+** Too difficult conflicts
+
+   Whether it is merging or rebasing you choose to go with, conflicts will be
+   present. Conflict is a situation where the same lines were modified in both
+   history trees you're trying to merge. In this situation, git requires you to
+   manually decide on the result of that merge.
+
+   Merging two branches could require solving a huge amount of
+   conflicts, which is something nobody really enjoys. I suggest
+   keeping your branches as small as possible in order to avoid this
+   problem. Keep your branch up to e.g. 8 commits. If it becomes
+   larger, divide it into multiple branches so you can merge them step
+   by step.
+
+** I want to make small experiments without keeping history
+
+   Developers, often write some piece of code and then divide it into parts
+   that actually make it into upstream and the parts that will be forgotten
+   forever. I like to call this that I'm "experimenting" with the codebase. I
+   just write a piece of code and see whether or how it works.
+
+   Experimenting is perfectly fine, but you should still keep
+   history. Mainly if it's a more elaborate experiment. And git can
+   help you with that. You can make experimental branches wherever you
+   like, whenever you like. Just keep them small, organized (by using
+   sensible names) and make sure their base is set right. Just pretend
+   it's a real development as you might be able to re-use commits from
+   your experimental branches later on.
+
+** Apply+drop instead of pop
+
+   =git stash= is indeed useful when fixing problems with your history. People
+   commonly use =git stash pop= to apply the changes from stash, which causes
+   them to lose the set of changes. There's nothing wrong with that, except if
+   the popped changes did something bad to your staged changes. There is a cool
+   trick you can use to apply the stashed changes without losing the actual
+   stash. You can use =git stash apply=, check if the changes look good. If they
+   do, you can =git stash drop= and then commit your changes. If they don't,
+   just reset them or revert them as you wish.
+
+** Can't compile the last commit, tests don't pass etc.
+
+   Have you ever pulled something from git, tried to build it and it didn't work
+   on the first time? Yeah, I did way too many times. However, I'm guilty of
+   this, too. In order to create a better policy for what should be commited and
+   what shouldn't, always define a set of rules. Like for example: Every
+   commited version must compile. Or that some limited set of tests can pass. Be
+   careful, especially if you want to experiment with some things that break the
+   tests. I strongly suggest setting it to compile only. The set of rules
+   should, preferably, be tested automatically.
+
+   To achieve this, you can use something called pre-commit hook. This
+   is an executable file that will be executed by git everytime you
+   try to make a commit - be it from =git commit=, =git rebase=, =git
+   merge= or whatever. If this executable returns exit value 0, your
+   commit will be accepted by git.  Otherwise, it will be rejected
+   until it passes the test. git always looks for this hook in
+   =.git/hooks/pre-commit= (relative to your repository folder).
+   Don't forget to make your hook executable (via =chmod +x=). If
+   you're looking for an inspiration, there is a sample hook at
+   =.git/hooks/pre-commit.sample= which is pre-installed by git.
+
+** Preventing work loss when using rebase
+
+   Rebase operation extracts diffs from commits from the branch that
+   is being rebased and creates new commits with the same diff. The
+   main drawback is that you lose a pointer to whatever was there
+   before. So if you accidentally drop one of the commits you didn't
+   intend to drop, you need to use =git reflog= (discussed in the following
+   tip) to recover it.
+
+   In order to prevent such inconvenience, you can start by checking
+   out a new branch from the branch you want to rebase. Rebasing the
+   new branch creates new commits and it also gives you opportunity to
+   test your changes. If you later realize that you lost something,
+   you can just checkout the old branch and grab any commit or file
+   from there.
+
+** I completed a rebase, but I need some dropped commit
+
+   Don't panic. Your changes are most likely still stored somewhere in
+   git. The problem is, there is no pointer to them, so unless you
+   know the SHA checksum of a particular commit you want to recover,
+   there seems to be no way back. Git has a command just for this: you
+   can use =git reflog= to show list of commits that were previously
+   checked out. Once you find a particular commit of interest, you can
+   just checkout the commit using its SHA and then create a branch so
+   that you can work with it easily.
+
+** Made a bunch of untested commits, found a bug
+
+   Relax, git can help. More precisely, you can use git to find which
+   commit caused the issue. Bisect is generally useful for
+   this. However, there is also another way I'd like to point
+   out. Suppose you want to get rid of a few suspicious commits, but
+   you don't want to drop them entirely.
+
+   Let's assume you are developing on a branch called =dev= where you
+   made a bunch of commits. Assume =master= branch is working. The
+   proposed solution is to checkout =dev=, then checkout a new branch
+   called for example =dev_test= and then rebase the new branch on top
+   of =master= doing required changes. Then, compile your project and
+   run your tests. Feel free to even checkout and create new branches
+   as much as you want.
+
+** Conflict-free push
+
+   Git is a tool that makes it possible for developers to collaborate
+   while working on a single code base. I was always wondering how
+   more developers manage to work on the code base at the same time
+   while pushing their changes to the server and keeping others up to
+   date.
+
+   The proposed solution is, that you never work on master branch
+   locally. You always need to work on a different branch. When you're
+   satisfied with your changes, do the following:
+
+   1. make sure you have a clean working tree (i.e. no diff)
+   2. pull from remote master branch to local master
+   3. rebase your development branch on top of master while resolving all conflicts
+   4. pull master again (to see if it changed while resolving conflicts). if not, continue. else, goto 2.
+   5. locally merge your branch to master (this will be fast-forward, since you already rebased it on top of the most up-to-date version).
+   6. push your master to origin
+
+   The advantage of this solution is that the period when the master
+   branch is "locked" by single developer is really short (steps 4 &
+   5). Thanks to that, more developers get less headache while working
+   on it and together, they produce linear history.
+
+** What are some useful commands??
+
+   This document is not about commands, but I would like to point your
+   attention to my [[https://github.com/tomsik68/dotfiles/tree/master/git/gitconfig][git aliases]]. You may find some interesting git
+   commands on the list.
