@@ -172,6 +172,18 @@
    do, you can =git stash drop= and then commit your changes. If they don't,
    just reset them or revert them as you wish.
 
+** Oops, I commited to the wrong branch
+
+   Sometimes it happens that you forget to switch branches before
+   making your changes. That's perfectly fine, we can fix it even
+   after you made some commits. Let's say you commited to branch
+   called =master= but want to transfer your commits to non-existing
+   branch =feature=. The fix starts off simple: checkout =master=,
+   create new branch =feature= from the current commit. Then, checkout
+   =master= again and use =reset --hard= with a checksum of the last
+   commit that should still end up on =master=. This way, your changes
+   are safe on =feature= branch and your =master= is clean again.
+   
 ** Can't compile the last commit, tests don't pass etc.
 
    Have you ever pulled something from git, tried to build it and it didn't work
